@@ -114,7 +114,11 @@ extension BarChart {
     }
     
     public func resumeAnimation() {
+        let lock = NSLock()
+        
         DispatchQueue.main.async { [weak self] in
+            lock.lock()
+            
             guard let self = self, !self.didAnimation else { return }
 
             for (index, bar) in self.bars.enumerated() {
@@ -126,6 +130,8 @@ extension BarChart {
             }
             
             self.didAnimation = true
+            
+            lock.unlock()
         }
     }
 }

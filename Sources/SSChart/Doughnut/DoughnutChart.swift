@@ -73,8 +73,11 @@ extension DoughnutChart {
     }
     
     public func resumeAnimation() {
-        // ???: is it right to use async, put whole block in async?
+        let lock = NSLock()
+
         DispatchQueue.main.async { [weak self] in
+            lock.lock()
+            
             guard let self = self,
                   let mask = self.doughnutLayer.mask,
                   !self.didAnimation else { return }
@@ -84,6 +87,8 @@ extension DoughnutChart {
             self.resumeAnimation(layer: mask, delay: 0)
             
             self.didAnimation = true
+            
+            lock.unlock()
         }
     }
 }
