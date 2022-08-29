@@ -13,7 +13,6 @@ import UIKit
 public class GaugeChart: UIView {
 
     // MARK: public
-    // 유효하지 않은 값 / 새로 데이터 안 들어올 때 기본 회색 차트 노출하게 해야 함
     public var items: [GaugeChartItem] = [
         GaugeChartItem(value: 55, color: .black),
         GaugeChartItem(value: 45, color: .systemGray)
