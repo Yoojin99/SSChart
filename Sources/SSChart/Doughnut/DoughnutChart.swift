@@ -8,37 +8,43 @@
 import Foundation
 import UIKit
 
-public class DoughnutChart: UIView, Chart {
+public class DoughnutChart: UIView {
     
     // MARK: public
-    // 유효하지 않은 값 / 새로 데이터 안 들어올 때 기본 회색 차트 노출하게 해야 함
     public var items: [DoughnutChartItem] = [
         DoughnutChartItem(value: 55, color: .black),
         DoughnutChartItem(value: 45, color: .systemGray)
     ] {
         didSet {
-            // TODO: show default chart if empty
-            reload()
+            setNeedsLayout()
+            layoutIfNeeded()
         }
     }
     
+    // MARK: - private
     private var contentView = UIView()
     private var doughnutLayer = CAShapeLayer()
     
-    // MARK: - user custom
+    // MARK: user custom
+    /// ratio of chart width to outer circle radius
+    private let outerCircleRadiusRatio: CGFloat
+    /// ratio of chart width to inner circle radius
+    private let innerCircleRadiusRatio: CGFloat
     private let animationDuration: Double
+    /// Bool indicating pause animation at the beginning.
+    private let isAnimationPaused: Bool
     
-    // MARK: - calculated
-    private let outerCircleRadius: CGFloat
-    private let innerCircleRadius: CGFloat
-    private let doughnutCenterRadius: CGFloat
-    private let doughnutWidth: CGFloat
+    // MARK: calculated
+    private var outerCircleRadius: CGFloat          = 0
+    private var innerCircleRadius: CGFloat          = 0
+    private var doughnutCenterRadius: CGFloat       = 0
+    private var doughnutWidth: CGFloat              = 0
+    
     private var didAnimation = false
     
     /// percenatge of prefix sum
     private var percentages: [ChartItemValuePercentage] = []
     
-    // TODO: turn on-off animation
     // TODO: draw title for each pieces
     
     // MARK: - init
@@ -47,12 +53,12 @@ public class DoughnutChart: UIView, Chart {
     ///   - outerCircleRadiusRatio: Ratio of width to outer circle radius. Default 2
     ///   - innerCircleRadiusRatio: Ratio of width to innder circle radius. Default 6
     ///   - animationDuration: Default 1.0
-    public init(frame: CGRect, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0) {
-        self.outerCircleRadius = frame.size.width / outerCircleRadiusRatio
-        self.innerCircleRadius = frame.size.width / innerCircleRadiusRatio
-        self.doughnutCenterRadius = (outerCircleRadius + innerCircleRadius) / 2
-        self.doughnutWidth = outerCircleRadius - innerCircleRadius
+    ///   - pauseAnimation: Pause animation at the beginning. Default false.
+    public init(frame: CGRect, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0, isAnimationPaused: Bool = false) {
+        self.outerCircleRadiusRatio = outerCircleRadiusRatio
+        self.innerCircleRadiusRatio = innerCircleRadiusRatio
         self.animationDuration = animationDuration
+        self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
     }
@@ -60,18 +66,18 @@ public class DoughnutChart: UIView, Chart {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    // MARK: - override
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        reload()
+    }
 }
 
 // MARK: - public
-extension DoughnutChart {
-    public func pauseAnimation() {
-        guard let mask = doughnutLayer.mask else {
-            return
-        }
-        
-        pauseAnimation(layer: mask)
-    }
-    
+// MARK: Chart
+extension DoughnutChart: Chart {
     public func resumeAnimation() {
         let lock = NSLock()
 
@@ -100,6 +106,10 @@ extension DoughnutChart {
         calculateChartData()
         drawChart()
         addAnimation()
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
     }
     
     // MARK: - reset
@@ -120,7 +130,15 @@ extension DoughnutChart {
 // MARK: - data
 extension DoughnutChart {
     private func calculateChartData() {
+        calculateSizeProperties()
         calculatePercentages()
+    }
+    
+    private func calculateSizeProperties() {
+        self.outerCircleRadius = frame.size.width / outerCircleRadiusRatio
+        self.innerCircleRadius = frame.size.width / innerCircleRadiusRatio
+        self.doughnutCenterRadius = (outerCircleRadius + innerCircleRadius) / 2
+        self.doughnutWidth = outerCircleRadius - innerCircleRadius
     }
     
     private func calculatePercentages() {
@@ -172,6 +190,13 @@ extension DoughnutChart {
         doughnutLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
+    public func pauseAnimation() {
+        guard let mask = doughnutLayer.mask else {
+            return
+        }
+        
+        pauseAnimation(layer: mask)
+    }
 }
 
 extension DoughnutChart {
