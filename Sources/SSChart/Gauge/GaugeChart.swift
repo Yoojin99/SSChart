@@ -36,6 +36,8 @@ public class GaugeChart: UIView {
     /// ratio of chart width to inner circle radius
     private let innerCircleRadiusRatio: CGFloat
     private let animationDuration: Double
+    /// Bool indicating pause animation at the beginning.
+    private let isAnimationPaused: Bool
     
     // MARK: calculated
     private var outerCircleRadius: CGFloat = 0
@@ -54,11 +56,13 @@ public class GaugeChart: UIView {
     ///   - outerCircleRadiusRatio: Ratio of chart width to outer circle radius. Default 2
     ///   - innerCircleRadiusRatio: Ratio of chart width to innder circle radius. Default 6
     ///   - animationDuration: Default 1.0
-    public init(frame: CGRect, gaugeWidth: CGFloat = 15, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0) {
+    ///   - pauseAnimation: Pause animation at the beginning. Default false.
+    public init(frame: CGRect, gaugeWidth: CGFloat = 15, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0, isAnimationPaused: Bool = false) {
         self.gaugeWidth = gaugeWidth
         self.outerCircleRadiusRatio = outerCircleRadiusRatio
         self.innerCircleRadiusRatio = innerCircleRadiusRatio
         self.animationDuration = animationDuration
+        self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
     }
@@ -78,14 +82,6 @@ public class GaugeChart: UIView {
 // MARK: - public
 // MARK: Chart
 extension GaugeChart: Chart {
-    public func pauseAnimation() {
-        guard let mask = gaugeLayer.mask else {
-            return
-        }
-        
-        pauseAnimation(layer: mask)
-    }
-    
     public func resumeAnimation() {
         let lock = NSLock()
 
@@ -114,6 +110,10 @@ extension GaugeChart {
         calculateChartData()
         drawChart()
         addAnimation()
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
     }
     
     // MARK: - reset
@@ -195,6 +195,13 @@ extension GaugeChart {
         gaugeLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
+    private func pauseAnimation() {
+        guard let mask = gaugeLayer.mask else {
+            return
+        }
+        
+        pauseAnimation(layer: mask)
+    }
 }
 
 extension GaugeChart {
