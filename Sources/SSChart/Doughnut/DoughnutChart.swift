@@ -53,7 +53,7 @@ public class DoughnutChart: UIView {
     ///   - outerCircleRadiusRatio: Ratio of width to outer circle radius. Default 2
     ///   - innerCircleRadiusRatio: Ratio of width to innder circle radius. Default 6
     ///   - animationDuration: Default 1.0
-    ///   - pauseAnimation: Pause animation at the beginning. Default false.
+    ///   - isAnimationPaused: Pause animation at the beginning. Default false.
     public init(frame: CGRect, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0, isAnimationPaused: Bool = false) {
         self.outerCircleRadiusRatio = outerCircleRadiusRatio
         self.innerCircleRadiusRatio = innerCircleRadiusRatio
