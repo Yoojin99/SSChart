@@ -190,7 +190,7 @@ extension DoughnutChart {
         doughnutLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
-    public func pauseAnimation() {
+    private func pauseAnimation() {
         guard let mask = doughnutLayer.mask else {
             return
         }
