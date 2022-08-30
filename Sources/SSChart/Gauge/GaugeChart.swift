@@ -82,11 +82,7 @@ public class GaugeChart: UIView {
 // MARK: Chart
 extension GaugeChart: Chart {
     public func resumeAnimation() {
-        let lock = NSLock()
-
         DispatchQueue.main.async { [weak self] in
-            lock.lock()
-            
             guard let self = self,
                   let mask = self.gaugeLayer.mask,
                   !self.didAnimation else { return }
@@ -96,8 +92,6 @@ extension GaugeChart: Chart {
             self.resumeAnimation(layer: mask, delay: 0)
             
             self.didAnimation = true
-            
-            lock.unlock()
         }
     }
 }
