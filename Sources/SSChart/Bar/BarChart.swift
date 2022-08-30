@@ -18,7 +18,7 @@ import UIKit
  If there is a group that has label, groupLabel will be drawn.
  If there is an item that has label, itemLabel will be drawn. The same applies to descriptionLabel.
  */
-public class BarChart: UIView, Chart {
+public class BarChart: UIView {
     /// cgPoints of each group for drawing
     private struct BarPoint {
         let topLeftPoint: CGPoint
@@ -31,8 +31,32 @@ public class BarChart: UIView, Chart {
             self.subPoints = subPoints
         }
     }
-        
-    // MARK: user setup
+    
+    // MARK: public
+    public var items: [BarChartGroupItem] = [
+        BarChartGroupItem(
+            items: [
+                BarChartItem(value: 2, color: UIColor.systemGray),
+                BarChartItem(value: 3, color: UIColor.systemGray2),
+                BarChartItem(value: 4, color: UIColor.systemGray3)
+            ]
+        ),
+        BarChartGroupItem(
+            items: [
+                BarChartItem(value: 3, color: UIColor.systemGray4),
+                BarChartItem(value: 4, color: UIColor.systemGray5)
+            ]
+        )
+    ] {
+        // TODO: load default data when empty
+        didSet {
+            setNeedsLayout()
+            layoutIfNeeded()
+        }
+    }
+    
+    // MARK: - private
+    // MARK: user custom
     /// space between groups
     private let groupSpace: CGFloat
     /// space between items
@@ -43,6 +67,8 @@ public class BarChart: UIView, Chart {
     private let animationDelayInterval: Double
     private let showAverageLine: Bool
     private let averageLineColor: UIColor
+    /// Bool indicating pause animation at the beginning.
+    private let isAnimationPaused: Bool
     
     // MARK: calculated
     private var showGroupLabel              = false
@@ -59,18 +85,11 @@ public class BarChart: UIView, Chart {
     private var averageLineLayer = CAShapeLayer()
     private var averageValue: CGFloat               = 0
     private var averageLineAnimationDelay: Double    = 0.0
-    
-    // TODO: add margins
         
-    public var items: [BarChartGroupItem] = [] {
-        // TODO: load default data when empty
-        didSet {
-            reload()
-        }
-    }
-    
     private var groupPoints: [BarPoint] = []
     private var bars: [UIView] = []
+    
+    // TODO: add margins
     
     // MARK: - init
     /// - Parameters:
@@ -83,7 +102,8 @@ public class BarChart: UIView, Chart {
     ///   - animationDelayInterval : interval between animation start time for each bar. Default 0.3
     ///   - showAverageLine : Default false
     ///   - averageLineColor: color of average line. Default systemRed
-    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, showAverageLine: Bool = false, averageLineColor: UIColor = UIColor.systemRed) {
+    ///   - isAnimationPaused: Pause animation at the beginning. Default false.
+    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, showAverageLine: Bool = false, averageLineColor: UIColor = UIColor.systemRed, isAnimationPaused: Bool = false) {
         self.groupSpace = groupSpace
         self.itemSpace = itemSpace
         self.groupLabelWidth = groupLabelWidth
@@ -92,6 +112,7 @@ public class BarChart: UIView, Chart {
         self.animationDelayInterval = animationDelayInterval
         self.showAverageLine = showAverageLine
         self.averageLineColor = averageLineColor
+        self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
     }
@@ -99,26 +120,19 @@ public class BarChart: UIView, Chart {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    // MARK: - override
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        reload()
+    }
 }
 
 // MARK: - public
-extension BarChart {
-    public func pauseAnimation() {
-        for bar in bars {
-            pauseAnimation(layer: bar.layer)
-        }
-        
-        if showAverageLine {
-            pauseAnimation(layer: averageLineLayer)
-        }
-    }
-    
+extension BarChart: Chart {
     public func resumeAnimation() {
-        let lock = NSLock()
-        
         DispatchQueue.main.async { [weak self] in
-            lock.lock()
-            
             guard let self = self, !self.didAnimation else { return }
 
             for (index, bar) in self.bars.enumerated() {
@@ -130,8 +144,6 @@ extension BarChart {
             }
             
             self.didAnimation = true
-            
-            lock.unlock()
         }
     }
 }
@@ -142,6 +154,10 @@ extension BarChart {
         reset()
         calculateChartData()
         drawChart()
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
     }
     
     private func reset() {
@@ -154,7 +170,10 @@ extension BarChart {
         showDescriptionLabel = false
         didAnimation = false
     }
-    
+}
+ 
+// MARK: - data
+extension BarChart {
     private func calculateChartData() {
         let groupCount = items.count
         var itemCount: Int = 0
@@ -203,7 +222,7 @@ extension BarChart {
     }
 }
 
-// MARK: view
+// MARK: - draw
 extension BarChart {
     private func drawChart() {
         for (groupIndex, group) in items.enumerated() {
@@ -267,6 +286,20 @@ extension BarChart {
     }
 }
 
+// MARK: - animation
+extension BarChart {
+    func pauseAnimation() {
+        for bar in bars {
+            pauseAnimation(layer: bar.layer)
+        }
+        
+        if showAverageLine {
+            pauseAnimation(layer: averageLineLayer)
+        }
+    }
+}
+
+// MARK: - view
 extension BarChart {
     private func createLabel(frame: CGRect, labelItem: BarChartLabelItem, align: NSTextAlignment) -> UILabel {
         let label = UILabel(frame: frame)

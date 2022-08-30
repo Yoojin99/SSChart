@@ -9,7 +9,6 @@ import Foundation
 import UIKit
 
 protocol Chart {
-    /// pause animation. This should be called after setting items for chart.
     func pauseAnimation()
     func resumeAnimation()
 }

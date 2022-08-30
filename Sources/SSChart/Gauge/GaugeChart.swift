@@ -10,30 +10,40 @@ import UIKit
 
 // FIXME: almost same as DoughnutChart. Consider adding protocol.
 
-public class GaugeChart: UIView, Chart {
+public class GaugeChart: UIView {
 
     // MARK: public
-    // 유효하지 않은 값 / 새로 데이터 안 들어올 때 기본 회색 차트 노출하게 해야 함
     public var items: [GaugeChartItem] = [
-        GaugeChartItem(value: 55, color: .black),
-        GaugeChartItem(value: 45, color: .systemGray)
+        GaugeChartItem(value: 55, color: .systemGray),
+        GaugeChartItem(value: 45, color: .systemGray2),
+        GaugeChartItem(value: 35, color: .systemGray3)
+
     ] {
         didSet {
-            reload()
+            setNeedsLayout()
+            layoutIfNeeded()
         }
     }
     
+    // MARK: - private
     private var contentView = UIView()
     private var gaugeLayer = CAShapeLayer()
     
-    // MARK: - user custom
-    private let animationDuration: Double
+    // MARK: user custom
+    /// width of the gauge line
     private let gaugeWidth: CGFloat
+    /// ratio of chart width to outer circle radius
+    private let outerCircleRadiusRatio: CGFloat
+    /// ratio of chart width to inner circle radius
+    private let innerCircleRadiusRatio: CGFloat
+    private let animationDuration: Double
+    /// Bool indicating pause animation at the beginning.
+    private let isAnimationPaused: Bool
     
-    // MARK: - calculated
-    private let outerCircleRadius: CGFloat
-    private let innerCircleRadius: CGFloat
-    private let gaugeCenterRadius: CGFloat
+    // MARK: calculated
+    private var outerCircleRadius: CGFloat = 0
+    private var innerCircleRadius: CGFloat = 0
+    private var gaugeCenterRadius: CGFloat = 0
     
     private var didAnimation = false
     
@@ -44,15 +54,16 @@ public class GaugeChart: UIView, Chart {
     /// - Parameters:
     ///   - frame: frame of chart
     ///   - gaugeWidth: width of gauge line. Default 15
-    ///   - outerCircleRadiusRatio: Ratio of width to outer circle radius. Default 2
-    ///   - innerCircleRadiusRatio: Ratio of width to innder circle radius. Default 6
+    ///   - outerCircleRadiusRatio: Ratio of chart width to outer circle radius. Default 2
+    ///   - innerCircleRadiusRatio: Ratio of chart width to innder circle radius. Default 6
     ///   - animationDuration: Default 1.0
-    public init(frame: CGRect, gaugeWidth: CGFloat = 15, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0) {
-        self.outerCircleRadius = frame.size.width / outerCircleRadiusRatio
-        self.innerCircleRadius = frame.size.width / innerCircleRadiusRatio
-        self.gaugeCenterRadius = (outerCircleRadius + innerCircleRadius) / 2
+    ///   - isAnimationPaused: Pause animation at the beginning. Default false.
+    public init(frame: CGRect, gaugeWidth: CGFloat = 15, outerCircleRadiusRatio: CGFloat = 2, innerCircleRadiusRatio: CGFloat = 6, animationDuration: Double = 1.0, isAnimationPaused: Bool = false) {
         self.gaugeWidth = gaugeWidth
+        self.outerCircleRadiusRatio = outerCircleRadiusRatio
+        self.innerCircleRadiusRatio = innerCircleRadiusRatio
         self.animationDuration = animationDuration
+        self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
     }
@@ -60,24 +71,20 @@ public class GaugeChart: UIView, Chart {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    
+    // MARK: - override
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        
+        reload()
+    }
 }
 
 // MARK: - public
-extension GaugeChart {
-    public func pauseAnimation() {
-        guard let mask = gaugeLayer.mask else {
-            return
-        }
-        
-        pauseAnimation(layer: mask)
-    }
-    
+// MARK: Chart
+extension GaugeChart: Chart {
     public func resumeAnimation() {
-        let lock = NSLock()
-
         DispatchQueue.main.async { [weak self] in
-            lock.lock()
-            
             guard let self = self,
                   let mask = self.gaugeLayer.mask,
                   !self.didAnimation else { return }
@@ -87,8 +94,6 @@ extension GaugeChart {
             self.resumeAnimation(layer: mask, delay: 0)
             
             self.didAnimation = true
-            
-            lock.unlock()
         }
     }
 }
@@ -100,6 +105,10 @@ extension GaugeChart {
         calculateChartData()
         drawChart()
         addAnimation()
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
     }
     
     // MARK: - reset
@@ -111,15 +120,23 @@ extension GaugeChart {
         gaugeLayer = CAShapeLayer(layer: layer)
         contentView.layer.addSublayer(gaugeLayer)
         
+        percentages.removeAll()
+        
         didAnimation = false
     }
 }
 
-
+// MARK: - data
 extension GaugeChart {
-    // MARK: - data
     private func calculateChartData() {
+        calculateSizeProperties()
         calculatePercentages()
+    }
+    
+    private func calculateSizeProperties() {
+        self.outerCircleRadius = frame.size.width / outerCircleRadiusRatio
+        self.innerCircleRadius = frame.size.width / innerCircleRadiusRatio
+        self.gaugeCenterRadius = (outerCircleRadius + innerCircleRadius) / 2
     }
     
     private func calculatePercentages() {
@@ -172,6 +189,13 @@ extension GaugeChart {
         gaugeLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
+    func pauseAnimation() {
+        guard let mask = gaugeLayer.mask else {
+            return
+        }
+        
+        pauseAnimation(layer: mask)
+    }
 }
 
 extension GaugeChart {
