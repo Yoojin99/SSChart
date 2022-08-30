@@ -14,8 +14,10 @@ public class GaugeChart: UIView {
 
     // MARK: public
     public var items: [GaugeChartItem] = [
-        GaugeChartItem(value: 55, color: .black),
-        GaugeChartItem(value: 45, color: .systemGray)
+        GaugeChartItem(value: 55, color: .systemGray),
+        GaugeChartItem(value: 45, color: .systemGray2),
+        GaugeChartItem(value: 35, color: .systemGray3)
+
     ] {
         didSet {
             setNeedsLayout()

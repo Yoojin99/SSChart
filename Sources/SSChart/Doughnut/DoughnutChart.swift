@@ -12,8 +12,8 @@ public class DoughnutChart: UIView {
     
     // MARK: public
     public var items: [DoughnutChartItem] = [
-        DoughnutChartItem(value: 55, color: .black),
-        DoughnutChartItem(value: 45, color: .systemGray)
+        DoughnutChartItem(value: 55, color: .systemGray),
+        DoughnutChartItem(value: 45, color: .systemGray2)
     ] {
         didSet {
             setNeedsLayout()
