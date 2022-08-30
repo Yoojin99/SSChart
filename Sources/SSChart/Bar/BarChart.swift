@@ -33,7 +33,21 @@ public class BarChart: UIView {
     }
     
     // MARK: public
-    public var items: [BarChartGroupItem] = [] {
+    public var items: [BarChartGroupItem] = [
+        BarChartGroupItem(
+            items: [
+                BarChartItem(value: 2, color: UIColor.systemGray),
+                BarChartItem(value: 3, color: UIColor.systemGray2),
+                BarChartItem(value: 4, color: UIColor.systemGray3)
+            ]
+        ),
+        BarChartGroupItem(
+            items: [
+                BarChartItem(value: 3, color: UIColor.systemGray4),
+                BarChartItem(value: 4, color: UIColor.systemGray5)
+            ]
+        )
+    ] {
         // TODO: load default data when empty
         didSet {
             setNeedsLayout()
