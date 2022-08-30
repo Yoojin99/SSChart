@@ -280,7 +280,7 @@ extension BarChart {
 
 // MARK: - animation
 extension BarChart {
-    private func pauseAnimation() {
+    func pauseAnimation() {
         for bar in bars {
             pauseAnimation(layer: bar.layer)
         }

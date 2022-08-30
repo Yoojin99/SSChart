@@ -193,7 +193,7 @@ extension GaugeChart {
         gaugeLayer.mask?.add(animation, forKey: "circleAnimation")
     }
     
-    private func pauseAnimation() {
+    func pauseAnimation() {
         guard let mask = gaugeLayer.mask else {
             return
         }
