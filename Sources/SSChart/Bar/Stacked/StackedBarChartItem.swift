@@ -14,7 +14,7 @@ public struct StackedBarChartItem {
     /// - Parameters:
     ///   - value: value of item
     ///   - color: color to fill section of bar
-    init(value: CGFloat, color: UIColor = UIColor.systemGreen) {
+    public init(value: CGFloat, color: UIColor = UIColor.systemGreen) {
         self.value = value
         self.color = color
     }
