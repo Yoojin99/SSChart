@@ -8,41 +8,7 @@
 import Foundation
 import UIKit
 
-protocol CommonBarChart: UIView {
-    func reload()
-    func reset()
-    func calculateChartData()
-    func drawChart()
-    func addAnimation()
-    
-    func pauseAnimation()
-    func resumeAnimation()
-}
-
-extension CommonBarChart {
-    
-    func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        addAnimation()
-    }
-    
-    func pauseAnimation(layer: CALayer) {
-        let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
-        layer.speed = 0
-        layer.timeOffset = pausedTime
-    }
-    
-    func resumeAnimation(layer: CALayer, delay: Double) {
-        let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
-        layer.speed = 1
-        layer.timeOffset = 0
-        layer.beginTime = CACurrentMediaTime() - pausedTime + delay
-    }
-}
-
-public class StackedBarChart: UIView, CommonBarChart {
+public class StackedBarChart: UIView, Chart {
     
     // MARK: - public
     public var items: [StackedBarChartItem] = [] {
@@ -118,6 +84,7 @@ extension StackedBarChart {
     }
 }
 
+// MARK: - private
 extension StackedBarChart {
     func reset() {
         bars.removeAll()
@@ -207,18 +174,18 @@ extension StackedBarChart {
 
 // MARK: - animation
 extension StackedBarChart {
-    func pauseAnimation() {
-        for bar in bars {
-            pauseAnimation(layer: bar.layer)
-        }
-    }
-    
     func addAnimation() {
         for (index, bar) in bars.enumerated() {
             bar.layer.add(createAnimationGroup(delay: Double(index) * animationDelay), forKey: "barAnimations")
         }
     }
     
+    func pauseAnimation() {
+        for bar in bars {
+            pauseAnimation(layer: bar.layer)
+        }
+    }
+        
     private func createAnimationGroup(delay: Double) -> CAAnimationGroup {
         let animationGroup = CAAnimationGroup()
         animationGroup.isRemovedOnCompletion = false

@@ -21,5 +21,4 @@ class StackedBarChartTest: XCTestCase {
         sut = nil
         try super.tearDownWithError()
     }
-
 }

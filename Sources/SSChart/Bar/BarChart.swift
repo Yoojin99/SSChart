@@ -150,17 +150,18 @@ extension BarChart: Chart {
 
 // MARK: - private
 extension BarChart {
-    private func reload() {
+    func reload() {
         reset()
         calculateChartData()
         drawChart()
+        addAnimation()
         
         if isAnimationPaused {
             pauseAnimation()
         }
     }
     
-    private func reset() {
+    func reset() {
         subviews.forEach{ $0.removeFromSuperview() }
         // TODO: items.removeAll()
         bars.removeAll()
@@ -174,7 +175,7 @@ extension BarChart {
  
 // MARK: - data
 extension BarChart {
-    private func calculateChartData() {
+    func calculateChartData() {
         let groupCount = items.count
         var itemCount: Int = 0
         var totalValue: CGFloat = 0
@@ -224,7 +225,7 @@ extension BarChart {
 
 // MARK: - draw
 extension BarChart {
-    private func drawChart() {
+    func drawChart() {
         for (groupIndex, group) in items.enumerated() {
             drawGroup(group, at: groupPoints[groupIndex])
         }
@@ -288,6 +289,24 @@ extension BarChart {
 
 // MARK: - animation
 extension BarChart {
+    func addAnimation() {
+        for (index, bar) in bars.enumerated() {
+            let barWidth = bar.bounds.size.width
+            bar.frame.size.width = 0
+            
+            let growAnimation = CABasicAnimation(keyPath: "bounds.size.width")
+            growAnimation.duration = 1
+            growAnimation.fromValue = 0
+            growAnimation.toValue = barWidth
+            growAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            growAnimation.beginTime = CACurrentMediaTime() + Double(index) * animationDelayInterval
+            growAnimation.fillMode = .forwards
+            growAnimation.isRemovedOnCompletion = false
+            
+            bar.layer.add(growAnimation, forKey: "growAnimation")
+        }
+    }
+    
     func pauseAnimation() {
         for bar in bars {
             pauseAnimation(layer: bar.layer)
@@ -313,21 +332,9 @@ extension BarChart {
     
     private func createBar(frame: CGRect, item: BarChartItem, delay: Double) -> UIView {
         let view = UIView(frame: .zero)
-        
         view.backgroundColor = item.color
-        let growAnimation = CABasicAnimation(keyPath: "bounds.size.width")
-        growAnimation.duration = 1
-        growAnimation.fromValue = 0
-        growAnimation.toValue = frame.width
-        growAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        growAnimation.beginTime = CACurrentMediaTime() + delay
-        growAnimation.fillMode = .forwards
-        growAnimation.isRemovedOnCompletion = false
-
         view.layer.anchorPoint = CGPoint(x: 0, y: 0)
-        view.frame = CGRect(x: frame.origin.x, y: frame.origin.y, width: 0, height: frame.height)
-        view.layer.add(growAnimation, forKey: "growAnimation")
-        
+        view.frame = frame        
         return view
     }
     

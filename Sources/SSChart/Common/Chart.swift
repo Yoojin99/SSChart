@@ -9,11 +9,24 @@ import Foundation
 import UIKit
 
 protocol Chart {
+    func reload()
+    func reset()
+    func calculateChartData()
+    func drawChart()
+    func addAnimation()
+    
     func pauseAnimation()
     func resumeAnimation()
 }
 
 extension Chart {
+    func reload() {
+        reset()
+        calculateChartData()
+        drawChart()
+        addAnimation()
+    }
+    
     func pauseAnimation(layer: CALayer) {
         let pausedTime = layer.convertTime(CACurrentMediaTime(), from: nil)
         layer.speed = 0

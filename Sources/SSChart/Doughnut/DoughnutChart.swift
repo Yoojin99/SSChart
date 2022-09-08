@@ -95,7 +95,7 @@ extension DoughnutChart: Chart {
 
 // MARK: - private
 extension DoughnutChart {
-    private func reload() {
+    func reload() {
         reset()
         calculateChartData()
         drawChart()
@@ -106,8 +106,7 @@ extension DoughnutChart {
         }
     }
     
-    // MARK: - reset
-    private func reset() {
+    func reset() {
         percentages.removeAll()
         
         contentView.removeFromSuperview()
@@ -123,7 +122,7 @@ extension DoughnutChart {
 
 // MARK: - data
 extension DoughnutChart {
-    private func calculateChartData() {
+    func calculateChartData() {
         calculateSizeProperties()
         calculatePercentages()
     }
@@ -154,7 +153,7 @@ extension DoughnutChart {
 
 // MARK: - draw
 extension DoughnutChart {
-    private func drawChart() {
+    func drawChart() {
         drawPieces()
         maskChart()
     }
@@ -174,7 +173,7 @@ extension DoughnutChart {
 
 // MARK: - animation
 extension DoughnutChart {
-    private func addAnimation() {
+     func addAnimation() {
         let animation = CABasicAnimation(keyPath: "strokeEnd")
         animation.duration = animationDuration
         animation.fromValue = 0

@@ -100,7 +100,7 @@ extension GaugeChart: Chart {
 
 // MARK: - private
 extension GaugeChart {
-    private func reload() {
+    func reload() {
         reset()
         calculateChartData()
         drawChart()
@@ -111,8 +111,7 @@ extension GaugeChart {
         }
     }
     
-    // MARK: - reset
-    private func reset() {
+    func reset() {
         contentView.removeFromSuperview()
         contentView = UIView(frame: bounds)
         addSubview(contentView)
@@ -128,7 +127,7 @@ extension GaugeChart {
 
 // MARK: - data
 extension GaugeChart {
-    private func calculateChartData() {
+    func calculateChartData() {
         calculateSizeProperties()
         calculatePercentages()
     }
@@ -158,7 +157,7 @@ extension GaugeChart {
 
 // MARK: - draw
 extension GaugeChart {
-    private func drawChart() {
+    func drawChart() {
         drawPieces()
         maskChart()
     }
@@ -179,7 +178,7 @@ extension GaugeChart {
     
 // MARK: - animation
 extension GaugeChart {
-    private func addAnimation() {
+    func addAnimation() {
         let animation = CABasicAnimation(keyPath: "strokeEnd")
         animation.duration = animationDuration
         animation.fromValue = 0
