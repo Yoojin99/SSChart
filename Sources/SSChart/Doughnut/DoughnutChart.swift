@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-public class DoughnutChart: UIView {
+public class DoughnutChart: UIView, Chart {
     
     // MARK: public
     public var items: [DoughnutChartItem] = [
@@ -32,7 +32,7 @@ public class DoughnutChart: UIView {
     private let innerCircleRadiusRatio: CGFloat
     private let animationDuration: Double
     /// Bool indicating pause animation at the beginning.
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: calculated
     private var outerCircleRadius: CGFloat          = 0
@@ -77,7 +77,7 @@ public class DoughnutChart: UIView {
 
 // MARK: - public
 // MARK: Chart
-extension DoughnutChart: Chart {
+extension DoughnutChart {
     public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self,
@@ -95,19 +95,7 @@ extension DoughnutChart: Chart {
 
 // MARK: - private
 extension DoughnutChart {
-    private func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        addAnimation()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
-    }
-    
-    // MARK: - reset
-    private func reset() {
+    func reset() {
         percentages.removeAll()
         
         contentView.removeFromSuperview()
@@ -123,7 +111,7 @@ extension DoughnutChart {
 
 // MARK: - data
 extension DoughnutChart {
-    private func calculateChartData() {
+    func calculateChartData() {
         calculateSizeProperties()
         calculatePercentages()
     }
@@ -154,7 +142,7 @@ extension DoughnutChart {
 
 // MARK: - draw
 extension DoughnutChart {
-    private func drawChart() {
+    func drawChart() {
         drawPieces()
         maskChart()
     }
@@ -174,14 +162,9 @@ extension DoughnutChart {
 
 // MARK: - animation
 extension DoughnutChart {
-    private func addAnimation() {
-        let animation = CABasicAnimation(keyPath: "strokeEnd")
-        animation.duration = animationDuration
-        animation.fromValue = 0
-        animation.toValue = 1
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        animation.isRemovedOnCompletion = true
-        doughnutLayer.mask?.add(animation, forKey: "circleAnimation")
+     func addAnimation() {
+         let circleAnimation = ChartAnimationFactory.createAnimation(type: .strokeEnd, duration: animationDuration)
+         doughnutLayer.mask?.add(circleAnimation, forKey: "circleAnimation")
     }
     
     func pauseAnimation() {
