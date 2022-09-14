@@ -22,7 +22,7 @@ public class StackedBarChart: UIView, Chart {
     private var percentages: [ChartItemValuePercentage] = []
     private var bars: [UIView] = []
     
-    private let animationDelay: Double = 0.4
+    private let animationDelay: Double = 0.3
     private var didAnimation: Bool = false
     private var maxBarWidth: CGFloat = 0
     
@@ -34,6 +34,7 @@ public class StackedBarChart: UIView, Chart {
     private let percentageLabelTextColor: UIColor
     private let animationDuration: Double
     private let barMoveUpSpace: Double
+    private let isAnimationPaused: Bool
     
     // MARK: - init
     /// - Parameters:
@@ -45,7 +46,8 @@ public class StackedBarChart: UIView, Chart {
     ///   - percentageLabelTextColor: text color of percentage label. Default white
     ///   - animationDuration: animation duartion. Default 0.8
     ///   - barMoveUpSpace: space that bar moves up during animation. Default 20
-    public init(frame: CGRect, itemSpacing: Double = 0.0, itemCornerRadius: Double = 0.0, showPercentage: Bool = true, percentageLabelFont: UIFont = UIFont.systemFont(ofSize: 12), percentageLabelTextColor: UIColor = UIColor.white, animationDuration: Double = 0.8, barMoveUpSpace: Double = 20) {
+    ///   - isAnimationPaused: bool indicates to pause animation at the beginning. Default false
+    public init(frame: CGRect, itemSpacing: Double = 0.0, itemCornerRadius: Double = 0.0, showPercentage: Bool = true, percentageLabelFont: UIFont = UIFont.systemFont(ofSize: 12), percentageLabelTextColor: UIColor = UIColor.white, animationDuration: Double = 0.5, barMoveUpSpace: Double = 0, isAnimationPaused: Bool = false) {
         self.itemSpacing = itemSpacing
         self.itemCornerRadius = itemCornerRadius
         self.showPercentage = showPercentage
@@ -53,6 +55,7 @@ public class StackedBarChart: UIView, Chart {
         self.percentageLabelTextColor = percentageLabelTextColor
         self.animationDuration = animationDuration
         self.barMoveUpSpace = barMoveUpSpace
+        self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
     }
@@ -66,6 +69,10 @@ public class StackedBarChart: UIView, Chart {
         super.layoutSubviews()
         
         reload()
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
     }
 }
 
