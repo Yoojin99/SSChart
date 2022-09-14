@@ -187,27 +187,6 @@ extension StackedBarChart {
     }
         
     private func createAnimationGroup(delay: Double) -> CAAnimationGroup {
-        let animationGroup = CAAnimationGroup()
-        animationGroup.isRemovedOnCompletion = false
-        animationGroup.fillMode = .forwards
-        animationGroup.duration = animationDuration
-        animationGroup.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        animationGroup.beginTime = CACurrentMediaTime() + delay
-        
-        animationGroup.animations = [createMoveUpAnimation(), createFadeInAnimation()]
-        
-        return animationGroup
-    }
-    
-    private func createMoveUpAnimation() -> CABasicAnimation {
-        let moveUpAnimation = CABasicAnimation(keyPath: "position.y")
-        moveUpAnimation.byValue = -barMoveUpSpace
-        return moveUpAnimation
-    }
-    
-    private func createFadeInAnimation() -> CABasicAnimation {
-        let fadeInAnimation = CABasicAnimation(keyPath: "opacity")
-        fadeInAnimation.byValue = 1
-        return fadeInAnimation
+        return ChartAnimationFactory.createAnimationGroup(types: [.moveVertical(value: -barMoveUpSpace), .fadeIn], duration: animationDuration, beginTimeDelay: delay, timingFunctionName: .easeInEaseOut, isRemovedOnCompletion: false, fillMode: .forwards)
     }
 }

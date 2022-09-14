@@ -10,7 +10,7 @@ import UIKit
 
 // FIXME: almost same as DoughnutChart. Consider adding protocol.
 
-public class GaugeChart: UIView {
+public class GaugeChart: UIView, Chart {
 
     // MARK: public
     public var items: [GaugeChartItem] = [
@@ -82,7 +82,7 @@ public class GaugeChart: UIView {
 
 // MARK: - public
 // MARK: Chart
-extension GaugeChart: Chart {
+extension GaugeChart {
     public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self,
@@ -179,13 +179,8 @@ extension GaugeChart {
 // MARK: - animation
 extension GaugeChart {
     func addAnimation() {
-        let animation = CABasicAnimation(keyPath: "strokeEnd")
-        animation.duration = animationDuration
-        animation.fromValue = 0
-        animation.toValue = 1
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        animation.isRemovedOnCompletion = true
-        gaugeLayer.mask?.add(animation, forKey: "circleAnimation")
+        let circleAnimation = ChartAnimationFactory.createAnimation(type: .strokeEnd, duration: animationDuration)
+        gaugeLayer.mask?.add(circleAnimation, forKey: "circleAnimation")
     }
     
     func pauseAnimation() {

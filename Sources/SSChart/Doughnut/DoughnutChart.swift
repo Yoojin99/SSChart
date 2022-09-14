@@ -8,7 +8,7 @@
 import Foundation
 import UIKit
 
-public class DoughnutChart: UIView {
+public class DoughnutChart: UIView, Chart {
     
     // MARK: public
     public var items: [DoughnutChartItem] = [
@@ -77,7 +77,7 @@ public class DoughnutChart: UIView {
 
 // MARK: - public
 // MARK: Chart
-extension DoughnutChart: Chart {
+extension DoughnutChart {
     public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self,
@@ -174,13 +174,8 @@ extension DoughnutChart {
 // MARK: - animation
 extension DoughnutChart {
      func addAnimation() {
-        let animation = CABasicAnimation(keyPath: "strokeEnd")
-        animation.duration = animationDuration
-        animation.fromValue = 0
-        animation.toValue = 1
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        animation.isRemovedOnCompletion = true
-        doughnutLayer.mask?.add(animation, forKey: "circleAnimation")
+         let circleAnimation = ChartAnimationFactory.createAnimation(type: .strokeEnd, duration: animationDuration)
+         doughnutLayer.mask?.add(circleAnimation, forKey: "circleAnimation")
     }
     
     func pauseAnimation() {
