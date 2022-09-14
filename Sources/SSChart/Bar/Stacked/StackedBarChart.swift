@@ -34,7 +34,7 @@ public class StackedBarChart: UIView, Chart {
     private let percentageLabelTextColor: UIColor
     private let animationDuration: Double
     private let barMoveUpSpace: Double
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: - init
     /// - Parameters:
@@ -69,10 +69,6 @@ public class StackedBarChart: UIView, Chart {
         super.layoutSubviews()
         
         reload()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
     }
 }
 

@@ -32,7 +32,7 @@ public class DoughnutChart: UIView, Chart {
     private let innerCircleRadiusRatio: CGFloat
     private let animationDuration: Double
     /// Bool indicating pause animation at the beginning.
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: calculated
     private var outerCircleRadius: CGFloat          = 0
@@ -95,17 +95,6 @@ extension DoughnutChart {
 
 // MARK: - private
 extension DoughnutChart {
-    func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        addAnimation()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
-    }
-    
     func reset() {
         percentages.removeAll()
         

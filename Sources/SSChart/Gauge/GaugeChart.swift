@@ -38,7 +38,7 @@ public class GaugeChart: UIView, Chart {
     private let innerCircleRadiusRatio: CGFloat
     private let animationDuration: Double
     /// Bool indicating pause animation at the beginning.
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: calculated
     private var outerCircleRadius: CGFloat = 0
@@ -100,17 +100,6 @@ extension GaugeChart {
 
 // MARK: - private
 extension GaugeChart {
-    func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        addAnimation()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
-    }
-    
     func reset() {
         contentView.removeFromSuperview()
         contentView = UIView(frame: bounds)

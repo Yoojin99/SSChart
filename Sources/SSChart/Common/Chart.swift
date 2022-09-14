@@ -9,6 +9,8 @@ import Foundation
 import UIKit
 
 protocol Chart {
+    var isAnimationPaused: Bool { get }
+    
     func reload()
     func reset()
     func calculateChartData()
@@ -25,6 +27,10 @@ extension Chart {
         calculateChartData()
         drawChart()
         addAnimation()
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
     }
     
     func pauseAnimation(layer: CALayer) {

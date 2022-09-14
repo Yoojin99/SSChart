@@ -68,7 +68,7 @@ public class BarChart: UIView, Chart {
     private let showAverageLine: Bool
     private let averageLineColor: UIColor
     /// Bool indicating pause animation at the beginning.
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: calculated
     private var showGroupLabel              = false
@@ -150,17 +150,6 @@ extension BarChart {
 
 // MARK: - private
 extension BarChart {
-    func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        addAnimation()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
-    }
-    
     func reset() {
         subviews.forEach{ $0.removeFromSuperview() }
         // TODO: items.removeAll()
