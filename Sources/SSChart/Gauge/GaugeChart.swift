@@ -10,7 +10,7 @@ import UIKit
 
 // FIXME: almost same as DoughnutChart. Consider adding protocol.
 
-public class GaugeChart: UIView {
+public class GaugeChart: UIView, Chart {
 
     // MARK: public
     public var items: [GaugeChartItem] = [
@@ -38,7 +38,7 @@ public class GaugeChart: UIView {
     private let innerCircleRadiusRatio: CGFloat
     private let animationDuration: Double
     /// Bool indicating pause animation at the beginning.
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: calculated
     private var outerCircleRadius: CGFloat = 0
@@ -82,7 +82,7 @@ public class GaugeChart: UIView {
 
 // MARK: - public
 // MARK: Chart
-extension GaugeChart: Chart {
+extension GaugeChart {
     public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self,
@@ -100,19 +100,7 @@ extension GaugeChart: Chart {
 
 // MARK: - private
 extension GaugeChart {
-    private func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        addAnimation()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
-    }
-    
-    // MARK: - reset
-    private func reset() {
+    func reset() {
         contentView.removeFromSuperview()
         contentView = UIView(frame: bounds)
         addSubview(contentView)
@@ -128,7 +116,7 @@ extension GaugeChart {
 
 // MARK: - data
 extension GaugeChart {
-    private func calculateChartData() {
+    func calculateChartData() {
         calculateSizeProperties()
         calculatePercentages()
     }
@@ -158,7 +146,7 @@ extension GaugeChart {
 
 // MARK: - draw
 extension GaugeChart {
-    private func drawChart() {
+    func drawChart() {
         drawPieces()
         maskChart()
     }
@@ -179,14 +167,9 @@ extension GaugeChart {
     
 // MARK: - animation
 extension GaugeChart {
-    private func addAnimation() {
-        let animation = CABasicAnimation(keyPath: "strokeEnd")
-        animation.duration = animationDuration
-        animation.fromValue = 0
-        animation.toValue = 1
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        animation.isRemovedOnCompletion = true
-        gaugeLayer.mask?.add(animation, forKey: "circleAnimation")
+    func addAnimation() {
+        let circleAnimation = ChartAnimationFactory.createAnimation(type: .strokeEnd, duration: animationDuration)
+        gaugeLayer.mask?.add(circleAnimation, forKey: "circleAnimation")
     }
     
     func pauseAnimation() {

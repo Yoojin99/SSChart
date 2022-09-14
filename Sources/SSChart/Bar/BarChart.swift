@@ -18,7 +18,7 @@ import UIKit
  If there is a group that has label, groupLabel will be drawn.
  If there is an item that has label, itemLabel will be drawn. The same applies to descriptionLabel.
  */
-public class BarChart: UIView {
+public class BarChart: UIView, Chart {
     /// cgPoints of each group for drawing
     private struct BarPoint {
         let topLeftPoint: CGPoint
@@ -68,7 +68,7 @@ public class BarChart: UIView {
     private let showAverageLine: Bool
     private let averageLineColor: UIColor
     /// Bool indicating pause animation at the beginning.
-    private let isAnimationPaused: Bool
+    let isAnimationPaused: Bool
     
     // MARK: calculated
     private var showGroupLabel              = false
@@ -130,7 +130,7 @@ public class BarChart: UIView {
 }
 
 // MARK: - public
-extension BarChart: Chart {
+extension BarChart {
     public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self, !self.didAnimation else { return }
@@ -150,17 +150,7 @@ extension BarChart: Chart {
 
 // MARK: - private
 extension BarChart {
-    private func reload() {
-        reset()
-        calculateChartData()
-        drawChart()
-        
-        if isAnimationPaused {
-            pauseAnimation()
-        }
-    }
-    
-    private func reset() {
+    func reset() {
         subviews.forEach{ $0.removeFromSuperview() }
         // TODO: items.removeAll()
         bars.removeAll()
@@ -174,7 +164,7 @@ extension BarChart {
  
 // MARK: - data
 extension BarChart {
-    private func calculateChartData() {
+    func calculateChartData() {
         let groupCount = items.count
         var itemCount: Int = 0
         var totalValue: CGFloat = 0
@@ -224,7 +214,7 @@ extension BarChart {
 
 // MARK: - draw
 extension BarChart {
-    private func drawChart() {
+    func drawChart() {
         for (groupIndex, group) in items.enumerated() {
             drawGroup(group, at: groupPoints[groupIndex])
         }
@@ -288,6 +278,16 @@ extension BarChart {
 
 // MARK: - animation
 extension BarChart {
+    func addAnimation() {
+        for (index, bar) in bars.enumerated() {
+            let barWidth = bar.bounds.size.width
+            bar.frame.size.width = 0
+            
+            let growAnimation = ChartAnimationFactory.createAnimation(type: .growWidth(finalWidth: barWidth), duration: 1, beginTimeDelay: Double(index) * animationDelayInterval, timingFunctionName: .easeInEaseOut, isRemovedOnCompletion: false, fillMode: .forwards)
+            bar.layer.add(growAnimation, forKey: "growAnimation")
+        }
+    }
+    
     func pauseAnimation() {
         for bar in bars {
             pauseAnimation(layer: bar.layer)
@@ -313,21 +313,9 @@ extension BarChart {
     
     private func createBar(frame: CGRect, item: BarChartItem, delay: Double) -> UIView {
         let view = UIView(frame: .zero)
-        
         view.backgroundColor = item.color
-        let growAnimation = CABasicAnimation(keyPath: "bounds.size.width")
-        growAnimation.duration = 1
-        growAnimation.fromValue = 0
-        growAnimation.toValue = frame.width
-        growAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        growAnimation.beginTime = CACurrentMediaTime() + delay
-        growAnimation.fillMode = .forwards
-        growAnimation.isRemovedOnCompletion = false
-
         view.layer.anchorPoint = CGPoint(x: 0, y: 0)
-        view.frame = CGRect(x: frame.origin.x, y: frame.origin.y, width: 0, height: frame.height)
-        view.layer.add(growAnimation, forKey: "growAnimation")
-        
+        view.frame = frame        
         return view
     }
     
@@ -342,14 +330,7 @@ extension BarChart {
         path.addLines(between: [CGPoint(x: xPos, y: 0), CGPoint(x: xPos, y: frame.height)])
         shapeLayer.path = path
         
-        let fadeInAnimation = CABasicAnimation(keyPath: "opacity")
-        fadeInAnimation.fromValue = 0.0
-        fadeInAnimation.toValue = 1.0
-        fadeInAnimation.duration = 1.2
-        fadeInAnimation.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        fadeInAnimation.fillMode = .forwards
-        fadeInAnimation.isRemovedOnCompletion = false
-        fadeInAnimation.beginTime = CACurrentMediaTime() + averageLineAnimationDelay
+        let fadeInAnimation = ChartAnimationFactory.createAnimation(type: .fadeIn, duration: 1.2, beginTimeDelay: averageLineAnimationDelay, timingFunctionName: .easeOut, isRemovedOnCompletion: false, fillMode: .forwards)
         shapeLayer.add(fadeInAnimation, forKey: "fadeIn")
         
         return shapeLayer
