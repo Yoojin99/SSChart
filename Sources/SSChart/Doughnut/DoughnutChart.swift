@@ -84,8 +84,6 @@ extension DoughnutChart {
                   let mask = self.doughnutLayer.mask,
                   !self.didAnimation else { return }
             
-            if self.didAnimation { return }
-
             self.resumeAnimation(layer: mask, delay: 0)
             
             self.didAnimation = true
