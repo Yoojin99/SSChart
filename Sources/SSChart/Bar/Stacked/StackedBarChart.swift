@@ -19,42 +19,30 @@ public class StackedBarChart: UIView, Chart {
     }
     
     // MARK: - private
-    private var percentages: [ChartItemValuePercentage] = []
-    private var bars: [UIView] = []
+    private var contentView: UIView = UIView()
+    private var barLayer: CAShapeLayer = CAShapeLayer()
+    private var maskLayer: CAShapeLayer = CAShapeLayer()
     
-    private let animationDelay: Double = 0.3
+    private var percentages: [ChartItemValuePercentage] = []
+    
     private var didAnimation: Bool = false
-    private var maxBarWidth: CGFloat = 0
     
     // MARK: user custom
-    private let itemSpacing: Double
-    private let itemCornerRadius: Double
-    private let showPercentage: Bool
-    private let percentageLabelFont: UIFont
-    private let percentageLabelTextColor: UIColor
+    private let barCornerRadius: CGFloat
+    private let defaultColor: UIColor
     private let animationDuration: Double
-    private let barMoveUpSpace: Double
     let isAnimationPaused: Bool
-    
+
     // MARK: - init
     /// - Parameters:
     ///   - frame: frame of chart
-    ///   - itemSpacing: space between item(bar). Default 0.0
-    ///   - itemCornerRadius: corner radius of item. Default 0.0
-    ///   - showPercentage: Bool determines to show percentage label. Default true
-    ///   - percentageLabelFont: font of percentage label. Default systemfont of size 12
-    ///   - percentageLabelTextColor: text color of percentage label. Default white
-    ///   - animationDuration: animation duartion. Default 0.8
-    ///   - barMoveUpSpace: space that bar moves up during animation. Default 20
+    ///   - barCornerRadius: cornerRaidus of stacked bar chart. Default 10
+    ///   - animationDuration: animation duartion. Default 1
     ///   - isAnimationPaused: bool indicates to pause animation at the beginning. Default false
-    public init(frame: CGRect, itemSpacing: Double = 0.0, itemCornerRadius: Double = 0.0, showPercentage: Bool = true, percentageLabelFont: UIFont = UIFont.systemFont(ofSize: 12), percentageLabelTextColor: UIColor = UIColor.white, animationDuration: Double = 0.5, barMoveUpSpace: Double = 0, isAnimationPaused: Bool = false) {
-        self.itemSpacing = itemSpacing
-        self.itemCornerRadius = itemCornerRadius
-        self.showPercentage = showPercentage
-        self.percentageLabelFont = percentageLabelFont
-        self.percentageLabelTextColor = percentageLabelTextColor
+    public init(frame: CGRect, barCornerRadius: CGFloat = 10, defaultColor: UIColor, animationDuration: Double = 1, isAnimationPaused: Bool = false) {
+        self.barCornerRadius = barCornerRadius
+        self.defaultColor = defaultColor
         self.animationDuration = animationDuration
-        self.barMoveUpSpace = barMoveUpSpace
         self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
@@ -76,12 +64,12 @@ public class StackedBarChart: UIView, Chart {
 extension StackedBarChart {
     public func resumeAnimation() {
         DispatchQueue.main.async { [weak self] in
-            guard let self = self, !self.didAnimation else { return }
-            
-            for (index, bar) in self.bars.enumerated() {
-                self.resumeAnimation(layer: bar.layer, delay: Double(index) * self.animationDelay)
-            }
-            
+            guard let self = self,
+                  let mask = self.barLayer.mask,
+                  !self.didAnimation else { return }
+
+            self.resumeAnimation(layer: mask, delay: 0)
+
             self.didAnimation = true
         }
     }
@@ -90,11 +78,18 @@ extension StackedBarChart {
 // MARK: - private
 extension StackedBarChart {
     func reset() {
-        bars.removeAll()
         percentages.removeAll()
-
-        subviews.forEach{ $0.removeFromSuperview() }
         
+        contentView.removeFromSuperview()
+        contentView = UIView(frame: bounds)
+        contentView.layer.cornerRadius = barCornerRadius
+        contentView.backgroundColor = .systemGray5
+        contentView.clipsToBounds = true
+        addSubview(contentView)
+        
+        barLayer = CAShapeLayer(layer: layer)
+        contentView.layer.addSublayer(barLayer)
+                
         didAnimation = false
     }
 }
@@ -103,17 +98,15 @@ extension StackedBarChart {
 extension StackedBarChart {
     func calculateChartData() {
         let totalValue = items.reduce(CGFloat(0)) { currentSum, item in
-            assert(item.value > 0, "[SSChart] StackedBarChartItem should have positive value.")
+            assert(item.value >= 0, "[SSChart] StackedBarChartItem can't have negative value.")
             return currentSum + item.value
         }
         
-        maxBarWidth = bounds.width - (Double((items.count-1)) * itemSpacing)
-        
-        var currentTotalValue: CGFloat = 0
+        var prefixSum: CGFloat = 0
         
         items.forEach { item in
-            percentages.append(ChartItemValuePercentage(start: (currentTotalValue / totalValue), end: (currentTotalValue + item.value) / totalValue))
-            currentTotalValue += item.value
+            percentages.append(ChartItemValuePercentage(start: prefixSum / totalValue, end: (prefixSum + item.value) / totalValue))
+            prefixSum += item.value
         }
     }
 }
@@ -121,75 +114,54 @@ extension StackedBarChart {
 // MARK: - draw
 extension StackedBarChart {
     func drawChart() {
-        if items.isEmpty {
-            let bar = createBar(frame: CGRect(x: 0, y: 0, width: bounds.size.width, height: bounds.size.height), color: .systemGray)
-            addSubview(bar)
-            bars.append(bar)
-            
-            if showPercentage {
-                let label = createPercentageLabel(percentage: ChartItemValuePercentage(start: 0, end: 0))
-                label.center = CGPoint(x: bar.bounds.width/2, y: bar.bounds.height/2)
-                bar.addSubview(label)
-            }
-            return
-        }
-        
-        for (index, (item, percentage)) in zip(items, percentages).enumerated() {
-            drawBars(index, item, percentage, showPercentage: showPercentage)
+        drawBars()
+        maskChart()
+    }
+    
+    func drawBars() {
+        for (item, percentage) in zip(items, percentages) {
+            let pieceOfBarLayer =
+            createBarLayer(with: percentage, color: item.color)
+            barLayer.addSublayer(pieceOfBarLayer)
         }
     }
     
-    private func drawBars(_ index: Int, _ item: StackedBarChartItem, _ percentage: ChartItemValuePercentage, showPercentage: Bool) {
-        
-        let bar = createBar(frame: CGRect(x: (maxBarWidth * percentage.start) + (Double(index) * itemSpacing), y: barMoveUpSpace, width: maxBarWidth * (percentage.end - percentage.start), height: frame.height), color: item.color)
-        addSubview(bar)
-        bars.append(bar)
-        
-        if showPercentage {
-            let label = createPercentageLabel(percentage: percentage)
-            label.center = CGPoint(x: bar.bounds.width/2, y: bar.bounds.height/2)
-            
-            bar.addSubview(label)
-        }
-    }
-    
-    private func createBar(frame: CGRect, color: UIColor) -> UIView {
-        let bar = UIView(frame: frame)
-        bar.backgroundColor = color
-        bar.alpha = 0
-        bar.layer.cornerRadius = itemCornerRadius
+    private func createBarLayer(with percentage: ChartItemValuePercentage, color: UIColor) -> CAShapeLayer {
+        let barXPos = percentage.start * bounds.width
+        let barWidth = (percentage.end - percentage.start) * bounds.width
+        let bar = CAShapeLayer(layer: layer)
+        bar.path = UIBezierPath(roundedRect: CGRect(x: barXPos, y: 0, width: barWidth, height: bounds.height), cornerRadius: 0).cgPath
+        bar.fillColor = color.cgColor
         
         return bar
     }
     
-    private func createPercentageLabel(percentage: ChartItemValuePercentage) -> UILabel {
-        let label = UILabel()
-        label.font = percentageLabelFont
-        label.textColor = percentageLabelTextColor
-        
-        let calculatedPercentage = Int((percentage.end - percentage.start) * 100)
-        label.text = "\(calculatedPercentage)%"
-        label.sizeToFit()
-        
-        return label
+    private func maskChart() {
+        maskLayer = createBarLayer(with: ChartItemValuePercentage(start: 0, end: 0), color: UIColor.black
+        )
+
+        barLayer.mask = maskLayer
     }
 }
 
 // MARK: - animation
 extension StackedBarChart {
     func addAnimation() {
-        for (index, bar) in bars.enumerated() {
-            bar.layer.add(createAnimationGroup(delay: Double(index) * animationDelay), forKey: "barAnimations")
-        }
+        let animation = CABasicAnimation(keyPath: "path")
+        animation.fromValue = maskLayer.path
+        animation.toValue = UIBezierPath(rect: bounds).cgPath
+        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        animation.duration = 1
+        animation.isRemovedOnCompletion = false
+        animation.fillMode = .forwards
+        maskLayer.add(animation, forKey: nil)
     }
-    
-    func pauseAnimation() {
-        for bar in bars {
-            pauseAnimation(layer: bar.layer)
-        }
-    }
-        
-    private func createAnimationGroup(delay: Double) -> CAAnimationGroup {
-        return ChartAnimationFactory.createAnimationGroup(types: [.moveVertical(value: -barMoveUpSpace), .fadeIn], duration: animationDuration, beginTimeDelay: delay, timingFunctionName: .easeInEaseOut, isRemovedOnCompletion: false, fillMode: .forwards)
-    }
+   
+   func pauseAnimation() {
+       guard let mask = barLayer.mask else {
+           return
+       }
+
+       pauseAnimation(layer: mask)
+   }
 }
