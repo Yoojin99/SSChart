@@ -147,13 +147,7 @@ extension StackedBarChart {
 // MARK: - animation
 extension StackedBarChart {
     func addAnimation() {
-        let animation = CABasicAnimation(keyPath: "path")
-        animation.fromValue = maskLayer.path
-        animation.toValue = UIBezierPath(rect: bounds).cgPath
-        animation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        animation.duration = 1
-        animation.isRemovedOnCompletion = false
-        animation.fillMode = .forwards
+        let animation = ChartAnimationFactory.createAnimation(type: .path(startPath: maskLayer.path!, endPath: UIBezierPath(rect: bounds).cgPath), duration: animationDuration, isRemovedOnCompletion: false, fillMode: .forwards)
         maskLayer.add(animation, forKey: nil)
     }
    
