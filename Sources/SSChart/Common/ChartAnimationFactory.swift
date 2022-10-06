@@ -13,6 +13,7 @@ enum ChartAnimationType {
     case fadeIn
     case strokeEnd
     case moveVertical(value: CGFloat)
+    case path(startPath: CGPath, endPath: CGPath)
 }
 
 // MARK: - public
@@ -67,6 +68,8 @@ final class ChartAnimationFactory {
             return createStrokeEndAnimation()
         case .moveVertical(let value):
             return createMoveVerticalAnimation(by: value)
+        case .path(let startPath, let endPath):
+            return createPathAnimation(from: startPath, to: endPath)
         }
     }
 }
@@ -96,6 +99,13 @@ extension ChartAnimationFactory {
         let moveUpAnimation = createBasicAnimation(with: "position.y")
         moveUpAnimation.byValue = value
         return moveUpAnimation
+    }
+    
+    static private func createPathAnimation(from: CGPath, to: CGPath) -> CABasicAnimation {
+        let pathAnimation = createBasicAnimation(with: "path")
+        pathAnimation.fromValue = from
+        pathAnimation.toValue = to
+        return pathAnimation
     }
 }
 
