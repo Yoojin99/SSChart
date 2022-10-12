@@ -80,6 +80,7 @@ public class BarChart: UIView, Chart {
     private let barCornerRadius: CGFloat
     private let averageLineInfo: AverageLineInfo?
     private let minimumBarWidth: CGFloat
+    private let doAnimation: Bool
     /// Bool indicating pause animation at the beginning.
     let isAnimationPaused: Bool
     
@@ -120,7 +121,8 @@ public class BarChart: UIView, Chart {
     ///   - barCornerRadius: cornerRadius of bar. Default 0
     ///   - spaceBetweenBarAndDescriptionLabel: Default 0
     ///   - isAnimationPaused: Pause animation at the beginning. Default false.
-    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, barCornerRadius: CGFloat = 0, averageLine: AverageLineInfo? = nil, spaceBetweenBarAndDescriptionLabel: CGFloat = 0, minimumBarWidth: CGFloat = 0, isAnimationPaused: Bool = false) {
+    ///   - doAnimation: Default true
+    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, barCornerRadius: CGFloat = 0, averageLine: AverageLineInfo? = nil, spaceBetweenBarAndDescriptionLabel: CGFloat = 0, minimumBarWidth: CGFloat = 0, isAnimationPaused: Bool = false, doAnimation: Bool = true) {
         self.groupSpace = groupSpace
         self.itemSpace = itemSpace
         self.groupLabelWidth = groupLabelWidth
@@ -131,6 +133,7 @@ public class BarChart: UIView, Chart {
         self.spaceBetweenBarAndDescriptionLabel = spaceBetweenBarAndDescriptionLabel
         self.minimumBarWidth = minimumBarWidth
         self.isAnimationPaused = isAnimationPaused
+        self.doAnimation = doAnimation
         
         super.init(frame: frame)
     }
@@ -168,6 +171,20 @@ extension BarChart {
 
 // MARK: - private
 extension BarChart {
+    func reload() {
+        reset()
+        calculateChartData()
+        drawChart()
+        
+        if doAnimation {
+            addAnimation()
+        }
+        
+        if isAnimationPaused {
+            pauseAnimation()
+        }
+    }
+    
     func reset() {
         subviews.forEach{ $0.removeFromSuperview() }
         // TODO: items.removeAll()
@@ -301,11 +318,11 @@ extension BarChart {
             barX += itemLabelWidth
             descriptionLabelX += itemLabelWidth
             
-            let label = createLabel(frame: CGRect(x: itemLabelX, y: point.topLeftPoint.y+1, width: itemLabelWidth, height: itemHeight-2), labelItem: item.label!, align: .left)
+            let label = createLabel(frame: CGRect(x: itemLabelX, y: point.topLeftPoint.y, width: itemLabelWidth, height: itemHeight), labelItem: item.label!, align: .left)
             contentView.addSubview(label)
         }
         
-        let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y, width: barWidth, height: itemHeight), item: item, delay: Double(index) * animationDelayInterval)
+        let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y+0.5, width: barWidth, height: itemHeight-1), item: item, delay: Double(index) * animationDelayInterval)
         contentView.addSubview(bar)
         bars.append(bar)
         
@@ -326,6 +343,7 @@ extension BarChart {
             let growAnimation = ChartAnimationFactory.createAnimation(type: .growWidth(finalWidth: barWidth), duration: 1, beginTimeDelay: Double(index) * animationDelayInterval, timingFunctionName: .easeInEaseOut, isRemovedOnCompletion: false, fillMode: .forwards)
             bar.layer.add(growAnimation, forKey: "growAnimation")
             
+            averageLineLayer.opacity = 0
             let fadeInAnimation = ChartAnimationFactory.createAnimation(type: .fadeIn, duration: 1.2, beginTimeDelay: averageLineAnimationDelay, timingFunctionName: .easeOut, isRemovedOnCompletion: false, fillMode: .forwards)
             averageLineLayer.add(fadeInAnimation, forKey: "fadeIn")
         }
@@ -368,7 +386,6 @@ extension BarChart {
         shapeLayer.strokeColor = color.cgColor
         shapeLayer.lineWidth = 2
         shapeLayer.lineDashPattern = [3,3]
-        shapeLayer.opacity = 0
         
         let path = CGMutablePath()
         path.addLines(between: [CGPoint(x: xPos, y: 0), CGPoint(x: xPos, y: frame.height)])
