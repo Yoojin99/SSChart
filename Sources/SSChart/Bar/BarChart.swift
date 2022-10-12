@@ -32,6 +32,16 @@ public class BarChart: UIView, Chart {
         }
     }
     
+    public struct AverageLineInfo {
+        let lineColor: UIColor
+        let bottomSpaceAreaHeight: CGFloat
+        
+        public init(lineColor: UIColor, bottomSpaceAreaHeight: CGFloat = 0) {
+            self.lineColor = lineColor
+            self.bottomSpaceAreaHeight = bottomSpaceAreaHeight
+        }
+    }
+    
     // MARK: public
     public var items: [BarChartGroupItem] = [
         BarChartGroupItem(
@@ -56,6 +66,8 @@ public class BarChart: UIView, Chart {
     }
     
     // MARK: - private
+    private var contentView = UIView()
+    
     // MARK: user custom
     /// space between groups
     private let groupSpace: CGFloat
@@ -63,10 +75,11 @@ public class BarChart: UIView, Chart {
     private let itemSpace: CGFloat
     private let groupLabelWidth: CGFloat
     private let itemLabelWidth: CGFloat
-    private let descriptionLabelWidth: CGFloat
+    private let spaceBetweenBarAndDescriptionLabel: CGFloat
     private let animationDelayInterval: Double
-    private let showAverageLine: Bool
-    private let averageLineColor: UIColor
+    private let barCornerRadius: CGFloat
+    private let averageLineInfo: AverageLineInfo?
+    private let minimumBarWidth: CGFloat
     /// Bool indicating pause animation at the beginning.
     let isAnimationPaused: Bool
     
@@ -78,6 +91,7 @@ public class BarChart: UIView, Chart {
     
     private var itemHeight: CGFloat         = 0
     private var maxBarWidth: CGFloat        = 0
+    private var descriptionLabelWidth: CGFloat = 0
     
     private var maxValue: CGFloat           = 0
     
@@ -89,6 +103,8 @@ public class BarChart: UIView, Chart {
     private var groupPoints: [BarPoint] = []
     private var bars: [UIView] = []
     
+    public var averageLineXPos: CGFloat = 0
+    
     // TODO: add margins
     
     // MARK: - init
@@ -98,20 +114,22 @@ public class BarChart: UIView, Chart {
     ///   - itemSpace: space between items. Default 3
     ///   - groupLabelWidth: width of group text label. Default 52
     ///   - itemLabelWidth: width of item text label. Default 52
-    ///   - descriptionLabelWidth:width of description text label. Default 52
     ///   - animationDelayInterval : interval between animation start time for each bar. Default 0.3
     ///   - showAverageLine : Default false
     ///   - averageLineColor: color of average line. Default systemRed
+    ///   - barCornerRadius: cornerRadius of bar. Default 0
+    ///   - spaceBetweenBarAndDescriptionLabel: Default 0
     ///   - isAnimationPaused: Pause animation at the beginning. Default false.
-    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, showAverageLine: Bool = false, averageLineColor: UIColor = UIColor.systemRed, isAnimationPaused: Bool = false) {
+    public init(frame: CGRect, groupSpace: CGFloat = 10, itemSpace: CGFloat = 3, groupLabelWidth: CGFloat = 52, itemLabelWidth: CGFloat = 52, descriptionLabelWidth: CGFloat = 52, animationDelayInterval: Double = 0.3, barCornerRadius: CGFloat = 0, averageLine: AverageLineInfo? = nil, spaceBetweenBarAndDescriptionLabel: CGFloat = 0, minimumBarWidth: CGFloat = 0, isAnimationPaused: Bool = false) {
         self.groupSpace = groupSpace
         self.itemSpace = itemSpace
         self.groupLabelWidth = groupLabelWidth
         self.itemLabelWidth = itemLabelWidth
-        self.descriptionLabelWidth = descriptionLabelWidth
         self.animationDelayInterval = animationDelayInterval
-        self.showAverageLine = showAverageLine
-        self.averageLineColor = averageLineColor
+        self.averageLineInfo = averageLine
+        self.barCornerRadius = barCornerRadius
+        self.spaceBetweenBarAndDescriptionLabel = spaceBetweenBarAndDescriptionLabel
+        self.minimumBarWidth = minimumBarWidth
         self.isAnimationPaused = isAnimationPaused
         
         super.init(frame: frame)
@@ -139,7 +157,7 @@ extension BarChart {
                 self.resumeAnimation(layer: bar.layer, delay: Double(index) * self.animationDelayInterval)
             }
             
-            if self.showAverageLine {
+            if self.averageLineInfo != nil {
                 self.resumeAnimation(layer: self.averageLineLayer, delay: self.averageLineAnimationDelay)
             }
             
@@ -154,6 +172,13 @@ extension BarChart {
         subviews.forEach{ $0.removeFromSuperview() }
         // TODO: items.removeAll()
         bars.removeAll()
+        
+        contentView.removeFromSuperview()
+        contentView = UIView(frame: bounds)
+        addSubview(contentView)
+        
+        maxValue = 1
+        descriptionLabelWidth = 0
         
         showGroupLabel = false
         showItemLabel = false
@@ -170,6 +195,8 @@ extension BarChart {
         var totalValue: CGFloat = 0
         var maxItemCountInGroup = 0
         
+        let labelForCalculatingWidth = UILabel()
+        
         for group in items {
             showGroupLabel = showGroupLabel || group.label != nil
             itemCount += group.items.count
@@ -180,13 +207,22 @@ extension BarChart {
                 showDescriptionLabel = showDescriptionLabel || item.descriptionLabel != nil
                 maxValue = max(maxValue, item.value)
                 totalValue += item.value
+                
+                if let labelInfo = item.descriptionLabel {
+                    labelForCalculatingWidth.text = labelInfo.text
+                    labelForCalculatingWidth.font = labelInfo.font
+                    labelForCalculatingWidth.sizeToFit()
+                    descriptionLabelWidth = max(descriptionLabelWidth, labelForCalculatingWidth.bounds.size.width+spaceBetweenBarAndDescriptionLabel)
+                }
             }
         }
         
         averageValue = totalValue / CGFloat(itemCount)
         let groupSpaceCount = items.count - 1
         let itemSpaceCount = itemCount - groupCount
-        let totalSpace = (groupSpace * CGFloat(groupSpaceCount)) + (itemSpace * CGFloat(itemSpaceCount))
+        var totalSpace = (groupSpace * CGFloat(groupSpaceCount)) + (itemSpace * CGFloat(itemSpaceCount))
+        
+        if let averageLineInfo = averageLineInfo { totalSpace += averageLineInfo.bottomSpaceAreaHeight}
         itemHeight = (frame.height - totalSpace) / CGFloat(itemCount)
         averageLineAnimationDelay = Double(maxItemCountInGroup-1) * animationDelayInterval + 1
         
@@ -219,19 +255,23 @@ extension BarChart {
             drawGroup(group, at: groupPoints[groupIndex])
         }
         
-        if showAverageLine {
-            drawAverageLine()
+        if let averageLineInfo = averageLineInfo {
+            drawAverageLine(info: averageLineInfo)
         }
     }
     
-    private func drawAverageLine() {
+    private func drawAverageLine(info: AverageLineInfo) {
         var xPos: CGFloat = maxBarWidth * (averageValue / maxValue)
         
+        if xPos == 0 { xPos += minimumBarWidth / 2 }
+        else if xPos == maxBarWidth { xPos -= minimumBarWidth / 2 }
+                    
         if showGroupLabel { xPos += groupLabelWidth }
         if showItemLabel { xPos += itemLabelWidth }
         
-        averageLineLayer = createDashLine(xPos: xPos)
-        layer.addSublayer(averageLineLayer)
+        averageLineLayer = createDashLine(xPos: xPos, color: info.lineColor)
+        averageLineXPos = xPos
+        contentView.layer.addSublayer(averageLineLayer)
     }
     
     private func drawGroup(_ group: BarChartGroupItem, at point: BarPoint) {
@@ -239,7 +279,7 @@ extension BarChart {
 
         if showGroupLabel {
             let label = createLabel(frame: CGRect(x: point.topLeftPoint.x, y: point.topLeftPoint.y, width: groupLabelWidth, height: groupLabelHeight), labelItem: group.label!, align: .left)
-            addSubview(label)
+            contentView.addSubview(label)
         }
         
         for (itemIndex, item) in group.items.enumerated() {
@@ -248,7 +288,7 @@ extension BarChart {
     }
     
     private func drawItem(_ item: BarChartItem, at point: BarPoint, index: Int) {
-        let barWidth: CGFloat = maxBarWidth * (item.value / maxValue)
+        let barWidth: CGFloat = max(maxBarWidth * (item.value / maxValue), minimumBarWidth)
         var itemLabelX: CGFloat = point.topLeftPoint.x, barX: CGFloat = point.topLeftPoint.x, descriptionLabelX: CGFloat = maxBarWidth
         
         if showGroupLabel {
@@ -261,17 +301,17 @@ extension BarChart {
             barX += itemLabelWidth
             descriptionLabelX += itemLabelWidth
             
-            let label = createLabel(frame: CGRect(x: itemLabelX, y: point.topLeftPoint.y, width: itemLabelWidth, height: itemHeight), labelItem: item.label!, align: .left)
-            addSubview(label)
+            let label = createLabel(frame: CGRect(x: itemLabelX, y: point.topLeftPoint.y+1, width: itemLabelWidth, height: itemHeight-2), labelItem: item.label!, align: .left)
+            contentView.addSubview(label)
         }
         
         let bar = createBar(frame: CGRect(x: barX, y: point.topLeftPoint.y, width: barWidth, height: itemHeight), item: item, delay: Double(index) * animationDelayInterval)
-        addSubview(bar)
+        contentView.addSubview(bar)
         bars.append(bar)
         
         if showDescriptionLabel {
             let descriptionLabel = createLabel(frame: CGRect(x: descriptionLabelX, y: point.topLeftPoint.y, width: descriptionLabelWidth, height: itemHeight), labelItem: item.descriptionLabel!, align: .right)
-            addSubview(descriptionLabel)
+            contentView.addSubview(descriptionLabel)
         }
     }
 }
@@ -285,6 +325,9 @@ extension BarChart {
             
             let growAnimation = ChartAnimationFactory.createAnimation(type: .growWidth(finalWidth: barWidth), duration: 1, beginTimeDelay: Double(index) * animationDelayInterval, timingFunctionName: .easeInEaseOut, isRemovedOnCompletion: false, fillMode: .forwards)
             bar.layer.add(growAnimation, forKey: "growAnimation")
+            
+            let fadeInAnimation = ChartAnimationFactory.createAnimation(type: .fadeIn, duration: 1.2, beginTimeDelay: averageLineAnimationDelay, timingFunctionName: .easeOut, isRemovedOnCompletion: false, fillMode: .forwards)
+            averageLineLayer.add(fadeInAnimation, forKey: "fadeIn")
         }
     }
     
@@ -293,7 +336,7 @@ extension BarChart {
             pauseAnimation(layer: bar.layer)
         }
         
-        if showAverageLine {
+        if averageLineInfo != nil {
             pauseAnimation(layer: averageLineLayer)
         }
     }
@@ -315,13 +358,14 @@ extension BarChart {
         let view = UIView(frame: .zero)
         view.backgroundColor = item.color
         view.layer.anchorPoint = CGPoint(x: 0, y: 0)
-        view.frame = frame        
+        view.frame = frame
+        view.layer.cornerRadius = barCornerRadius
         return view
     }
     
-    private func createDashLine(xPos: CGFloat) -> CAShapeLayer {
+    private func createDashLine(xPos: CGFloat, color: UIColor) -> CAShapeLayer {
         let shapeLayer = CAShapeLayer()
-        shapeLayer.strokeColor = averageLineColor.cgColor
+        shapeLayer.strokeColor = color.cgColor
         shapeLayer.lineWidth = 2
         shapeLayer.lineDashPattern = [3,3]
         shapeLayer.opacity = 0
@@ -329,9 +373,6 @@ extension BarChart {
         let path = CGMutablePath()
         path.addLines(between: [CGPoint(x: xPos, y: 0), CGPoint(x: xPos, y: frame.height)])
         shapeLayer.path = path
-        
-        let fadeInAnimation = ChartAnimationFactory.createAnimation(type: .fadeIn, duration: 1.2, beginTimeDelay: averageLineAnimationDelay, timingFunctionName: .easeOut, isRemovedOnCompletion: false, fillMode: .forwards)
-        shapeLayer.add(fadeInAnimation, forKey: "fadeIn")
         
         return shapeLayer
     }
